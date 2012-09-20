@@ -31,12 +31,12 @@
 ##
 ################################################################################
 
-import os
+
 
 from random import randint
 from cards import Monster, Spell, Trap, Deck
 from input import Input
-
+from field import Field
 
 graphics_setting = True
 colour_text = True
@@ -116,64 +116,7 @@ class Lifepoints():
     def decrease(self, amount):
         self.lifepoints -= amount
       
-# States: 0 = face-up attack, 1 = face-up defense , 2 = face-down defense, 
-# 3 = face-down spell/trap , 4 = face-up spell/trap 
-class Field():
 
-    def __init__(self, field_type):
-        self.type = field_type
-        self.space1 = [0,0,0]
-        self.space2 = [0,0,0]
-        self.space3 = [0,0,0]
-        self.space4 = [0,0,0]
-        self.space5 = [0,0,0]
-        self.spaces = [self.space1,self.space2,self.space3,self.space4,self.space5]
-    def addcard(self, card, position):
-        for space in self.spaces:
-            if space[0] == 0:
-                print "Found an open space"
-                space[0], space[1], space[2] = 1, position, card
-                print space
-                print space[2].name
-                break
-        print "After break"
-    def removecard(self, card):
-        for space in self.spaces:
-            if space[0] == 1:
-                if space[2] == card:
-                    space[0] = 0
-                    space[1] = 0
-                    space[2] = 0
-    def updatestate(self, card, state):
-        for space in self.spaces:
-            if space[2] == card:
-                space[1] == state
-    def list(self, type, print_names=False):
-        return_type = []
-        if type == False:
-            for space in self.spaces:
-                if space[0] == 1:
-                    print space[2].name
-        elif type == "spell":
-            for space in self.spaces:
-                if space[0] == 1:
-                    if space[2].type == "spell":
-                        return_type.append(space[2])
-            return return_type
-        elif type == "monster":
-            for space in self.spaces:
-                if space[0] == 1:
-                    if space[2].type == "monster":
-                        return_type.append(space[2])
-            return return_type
-        elif type == "trap":
-            for space in self.spaces:
-                if space[0] == 1:
-                    if space[2].type == "trap":
-                        return_type.append(space[2])
-                        if print_names == True:
-                            print space[2].name
-            return return_type
 
 class Player():
     def __init__(self, name, decklist):
@@ -194,7 +137,10 @@ class Player():
             cprint("Error: You have no monster cards in your hand.", "red")
             return
         result = input_handler.input_get("Which monster would you like to summon? ")
-        result = int(result)
+        result = convert_int(result)
+        if result == None:
+            cprint("This is not a valid option.", "red")
+            return 
         result -= 1
         card = monster_cards[result]
         print "You chose %s " % card.name
@@ -285,7 +231,10 @@ class Player():
                 print card.name
                 card_type_list.append(card)
         result = input_handler.input_get("Which %s would you like to set? " % type)
-        result = int(result)
+        result = convert_int(result)
+        if result == None:
+            cprint("Not a valid option.", "red")
+            return
         result -= 1
         card = card_type_list[result]
         print "You chose %s " % card.name
@@ -304,7 +253,9 @@ class Player():
                 print card.name
                 card_type_list.append(card)
         result = input_handler.input_get("Which %s would you like to activate? " % type)
-        result = int(result) - 1
+        result = convert_int(result) - 1
+        if result == None:
+            cprint("This is not a valid option.", "red")
         card = card_type_list[result]
         if activate_type == "hand":
             self.stfield.addcard(card, 4)
@@ -319,8 +270,14 @@ class Player():
     def activate_trap(self):
         
         trap_list = self.stfield.list("trap", print_names = True)
+        if len(trap_list) == 0:
+            cprint("You have no trap cards on the field to activate.", "red")
+            return
         result = input_handler.input_get("Which trap would you like to activate?\n> ")
-        result = int(result)
+        result = convert_int(result)
+        if result == None:
+            cprint("This is not a valid option.", "red")
+            return
         result -= 1
         card = trap_list[result]
         self.stfield.updatestate(card, 4)
@@ -398,6 +355,8 @@ card8 = Spell("Trap Card 1", "trap", "This is trap card 1", "print 'I am number 
 card9 = Spell("Trap Card 2", "trap", "This is trap card 2", "print 'I am number 7'")
 card10 = Spell("Trap Card 2", "trap", "This is trap card 3", "print 'I am number 9'")
 
+
+# Setup player variables
 player1_decklist = [card1, card2, card3, card4, card5, card6, card7, card8, card9, card10]
 player2_decklist = [card1, card2, card3, card4, card5, card6, card7, card8, card9, card10]
 player1 = Player("Joshua", player1_decklist)

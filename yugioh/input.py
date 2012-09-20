@@ -32,7 +32,7 @@ class Input():
         elif string == "battle":
             players[0].battle()
         elif string == "spell":
-            spell_command_type = input_get("Set or activate spell? ")
+            spell_command_type = self.input_get("Set or activate spell? ")
             if spell_command_type == "set":
                 players[0].set("spell")
             elif spell_command_type == "activate":
