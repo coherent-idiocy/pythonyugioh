@@ -77,7 +77,15 @@ if graphics_setting == True:
     #pygame.init()
     #screen = pygame.display.set_mode((468, 60))
     #pygame.display.set_caption('Yugioh Game')
-    
+
+def convert_int(string):
+    try:
+        result = int(string)
+    except:
+        eprint("ConversionError: %s could not be converted to an integer." % string, on_color = "on_red")
+        result = None
+    return result
+   
     
 def load_image(name, colorkey=None):
     fullname = os.path.join('data', name)
@@ -195,9 +203,32 @@ class Player():
             self.mfield.addcard(card, 0)
             cprint("You have successfully summoned: %s" % card.name, "green")
         elif card.level <= 6:
-            print "You must tribute a monster to summon this monster."
-            print ""
-            self.mfield.list(False)
+            while True:
+                print "You must tribute a monster to summon this monster.\n"
+                monsterfield_cards = self.mfield.list("monster", print_names=True)
+                print monsterfield_cards.count
+                if len(monsterfield_cards) == 0:
+                    cprint("You have no monsters to tribute.", "red")
+                    return
+                result = input_handler.input_get("Which monster would you like to tribute?\n> ")
+                result = convert_int(result)
+                if result != None:
+                    break
+            result -= 1
+            tribute_card = monsterfield_cards[result]
+            self.mfield.removecard(tribute_card)
+            self.hand.remove(card)
+            self.mfield.addcard(card, 0)
+            cprint("You have successfully summoned: %s" % card.name, "green")
+
+
+
+        elif card.level <= 8:
+            print "You must tribute 2 monsters to summon this monster.\n"
+            print "This hasn't been implemented yet."
+
+
+
     def battle(self):
         print "Battle function of %s" % self.name
         enemy_player = current_players()[1]
@@ -295,7 +326,7 @@ class Player():
         self.stfield.updatestate(card, 4)
         exec card.effect
         self.stfield.removecard(card)
-    
+        cprint("You have successfully activated: %s" % card.name, "green")
     def hand_count(self):
         return len(self.hand)
     def draw(self, card):

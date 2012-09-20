@@ -28,7 +28,6 @@ class Input():
 
     def execute(self, string, players):
         if string == "summon":
-            print "Summon command currently in development."
             players[0].summon()
         elif string == "battle":
             players[0].battle()
