@@ -17,14 +17,29 @@ class Input():
         else:
             string = raw_input(prompt)
         return string
-    def input(self, string, players):
-        self.authorise(string, players)
+    def input(self, players, string="default", parser_object=False):
+        if parser_object:
+            print "Gave this Input() a parser_object"
+            self.authorise(players, parser_object=parser_object)
+        else:
+            self.authorise(players, string=string)
 
-    def authorise(self, string, players):
-        for command in self.commands_list:
-            if string == command:
-                self.execute(command, players)
-                break
+    def authorise(self, players, string="default", parser_object=False):
+        if string != "default":
+            for command in self.commands_list:
+                if string == command:
+                    self.execute(command, players)
+                    break
+        elif parser_object:
+            print "Authorising parser_object."
+            print "parser_object.command = "
+            print parser_object.command[1]
+            print "parser_object.parameter[0][0] = "
+            print parser_object.parameter[0][0]
+            if parser_object.command[1] == 'set' and parser_object.parameter[0][0] == 'type':
+                players[0].set(parser_object.parameter[0][1])
+        else:
+            print "Mr. Input() is confused :(" 
 
     def execute(self, string, players):
         if string == "summon":

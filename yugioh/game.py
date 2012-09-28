@@ -32,60 +32,59 @@
 ################################################################################
 
 
+# Errors:
+# ImportError
+# ConversionError
 
 from random import randint
-from cards import Monster, Spell, Trap, Deck
-from input import Input
-from field import Field
 
-graphics_setting = True
-colour_text = True
-test_mode = False
+from errors import *
 
-test_answers = ["set","1","activate","1"]
+
+
+
+test_mode = True
+
+#test_answers = ["set","1","activate","1"]
+test_answers = ["1"]
 test_current_element = 0
 
 
-if colour_text == True:
-    try:
-        from termcolor import *
-        def eprint(text, on_color):
-            cprint(text, on_color = on_color)
-    except ImportError:
-        def cprint(text, colour):
-            print text
-        def eprint(text, on_color):
-            print text
-        eprint("ImportError: termcolor could not be imported.", on_color = "on_red")
-else:
-    def cprint(text, colour):
-        print text
-    def eprint(text, on_color):
-        print text
-        
-class InputError(Exception):
-    pass
+
+
+#error_handler = ErrorHandler()
+error_handler = ErrorHandler()
+#class ImportError(Exception):
+    #eprint(string, on_color = "on_red")
+    #pass
 
 try:
     import lolztest
 except ImportError:
-    eprint("ImportError: lolztest could not be imported.", on_color = "on_red")
-    
+    error_handler.raise_error("Import", "lolztest")
+
 if graphics_setting == True:
-    import pygame
-    from pygame.locals import *
+    try:
+        import pygame
+    except ImportError:
+        error_handler.raise_error("Import", "pygame")
+        graphics_setting == False
+
+    
+#if graphics_setting == True:
+ #   import pygame
+ #   from pygame.locals import *
     #pygame.init()
     #screen = pygame.display.set_mode((468, 60))
     #pygame.display.set_caption('Yugioh Game')
 
-def convert_int(string):
+def convert_int(string, error_print=True):
     try:
-        result = int(string)
-    except:
-        eprint("ConversionError: %s could not be converted to an integer." % string, on_color = "on_red")
-        result = None
-    return result
-   
+        return int(string)
+    except ValueError:
+        if error_print == True:
+            eprint("ConversionError: %s could not be converted to an integer." % string, on_color = "on_red")
+        return None 
     
 def load_image(name, colorkey=None):
     fullname = os.path.join('data', name)
@@ -101,12 +100,93 @@ def load_image(name, colorkey=None):
         image.set_colorkey(colorkey, RLEACCEL)
     return image, image.get_rect()
 
-
-
-
 def current_players():
     return players
 
+class ParsedCommand():
+    def __init__(self, command, parameter):
+        self.command = command
+        self.parameter = parameter
+
+class ParserError(Exception):
+    pass
+
+class Parser():
+    def __init__(self):
+        self.lexemes = {'set': 'command', 'activate': 'command',
+                        'attack': 'command', 'check': 'command',
+                        'summon': 'command',
+
+        'trap': 'type',
+        'spell': 'type',
+        'monster': 'type'
+        }
+    def scan(self, sentence):
+        words = sentence.split()
+        word_list = []
+        for word in words:
+            temp = convert_int(word, False)
+            if isinstance(temp, int):
+                num_tuple = ('number', temp)
+                word_list.append(num_tuple)
+            else:
+                word_type = self.lexemes.get(word, 'Error')
+                word_list.append((word_type, word))
+        return word_list
+    def peek(self, word_list):
+        if word_list:
+            word = word_list[0]
+            #print word[0]
+            return word[0]
+        else:
+            return None
+
+    def match(self, word_list, expecting):
+        if word_list:
+            word = word_list.pop(0)
+
+            if word[0] == expecting:
+                return word
+            else:
+                return None
+        else:
+            return None
+
+    def parse_parameters(self, word_list, command):
+        parameters = []
+        parameters_remaining = 0
+        print "Getting parameters for this command:"
+        print command
+        if command[1] == "set":
+            #print self.peek(word_list)
+            if self.peek(word_list) == 'type':
+                print "This command is followed by a monster type, which is:"
+                card_type = self.match(word_list, 'type')
+                print card_type
+                parameters.append(card_type)
+        return parameters
+
+    def parse_command(self, word_list, command):
+
+       
+        parameters = self.parse_parameters(word_list, command)
+        command_object = ParsedCommand(command, parameters)
+        return command_object
+
+    def parse_sentence(self, word_list):
+        start = self.peek(word_list)
+        #print start
+
+        if start == 'command':
+            command = self.match(word_list, 'command')
+            return self.parse_command(word_list, command)
+        else:
+            raise ParserError('This is not a valid command.')
+
+    def parse(self, string):
+        word_list = self.scan(string)
+        output = self.parse_sentence(word_list)
+        return output
 
 class Lifepoints():
     def __init__(self):
@@ -116,6 +196,16 @@ class Lifepoints():
     def decrease(self, amount):
         self.lifepoints -= amount
       
+class Area():
+    def __init__(self, name):
+        self.name = name
+        self.list = []
+    def addcard(self, card):
+        self.list.append(card)
+        cprint("Added %s to %s successfully." % (card.name, self.name), "green")
+    def removecard(self, card):
+        self.list.remove(card)
+        cprint("Removed %s from %s successfully." % (card.name, self.name), "green")
 
 
 class Player():
@@ -126,6 +216,8 @@ class Player():
         self.mfield = Field("monster")
         self.stfield = Field("spelltrap")
         self.lifepoints = Lifepoints()
+        self.graveyard = Area("Player's graveyard")
+
     def summon(self):
         print "Summon function of %s" % self.name
         monster_cards = []
@@ -247,6 +339,9 @@ class Player():
             area = self.hand
         elif activate_type == "field":
             area = self.stfield.list("spell") 
+        else:
+            cprint("This is not a valid option.", "red")
+            return
         card_type_list = []
         for card in area:
             if card.type == type:
@@ -263,6 +358,7 @@ class Player():
             cprint("You have successfully activated: %s" % card.name, "green")
             exec card.effect
             self.stfield.removecard(card)
+            self.graveyard.addcard(card)
         elif activate_type == "field":
             self.stfield.updatestate(card, 4)
             exec card.effect
@@ -284,6 +380,7 @@ class Player():
         exec card.effect
         self.stfield.removecard(card)
         cprint("You have successfully activated: %s" % card.name, "green")
+        self.graveyard.addcard(card)
     def hand_count(self):
         return len(self.hand)
     def draw(self, card):
@@ -364,6 +461,8 @@ player2 = Player("Steven", player2_decklist)
 test_details = [test_mode, test_answers]
 input_handler = Input(test_details)
 graphics_handler = GraphicsHandler()
+parser = Parser()
+
 
 player1.draw(False)
 player1.draw(False)
@@ -387,7 +486,7 @@ def phasecycle():       # Cycles through each phase for the active player's turn
         active_phase += 1
     while active_phase == 3:
         print "Main Phase 1"
-        input_handler.input(input_handler.input_get("What do you want to do: "), players)
+        input_handler.input(players, string=input_handler.input_get("What do you want to do: "))
         proceed_phase = input_handler.input_get("Would you like to end Main Phase 1? ")   # Ask user if they want to end the current phase
             
         if proceed_phase in ('yes', 'y', 'proceed', 'ok'):
@@ -412,9 +511,10 @@ def phasecycle():       # Cycles through each phase for the active player's turn
 players = [player1, player2]  
 if test_mode:
     print "Test mode!"
-    input_handler.input("trap", players)
-    print "Test"
-    input_handler.input("trap", players)
+    print "Test 1:"
+    test = parser.parse(raw_input("> "))
+    print test.command, test.parameter
+    input_handler.input(players, parser_object=test)
     
 else:
     while True:

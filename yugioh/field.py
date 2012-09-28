@@ -18,7 +18,7 @@ class Field():
                 print space
                 print space[2].name
                 break
-        print "After break"
+        #print "After break"
     def removecard(self, card):
         for space in self.spaces:
             if space[0] == 1:
