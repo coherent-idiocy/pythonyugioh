@@ -104,9 +104,17 @@ def destroy(players, area, both_players=True):
         players[1].mfield.list(False, print_names=True)
         cprint ("Spell & Trap Field:", "cyan")
         players[1].stfield.list(False, print_names=True)
-
-
-
+        choice = parser.parse(raw_input("> "),players)
+        print choice.parameter[0][1]
+        print choice.parameter[1][0]
+        if choice.parameter[0][1] == "mf" and isinstance(choice.parameter[1][1], int):
+            #print "YOEJHAGBEFMSF"
+            x = choice.parameter[1][1] - 1
+            print x
+            choice.determiner.mfield.removecard(choice.determiner.mfield.spaces[0][2])
+        cprint("AFTER:", "green")
+        cprint ("Monster Field:", "cyan")
+        players[0].mfield.list(False, print_names=True)
 
 
 
@@ -150,8 +158,15 @@ def destroy(players, area, both_players=True):
 
 
 class ParsedCommand():
-    def __init__(self, command, parameter):
+    def __init__(self, parameter, command=False, determiner=False):
         self.command = command
+        self.determiner = determiner
+        #if command != False:
+        #    self.command = command
+        #if determiner != False:
+
+           # self.determiner = determiner
+
         self.parameter = parameter
 
 class ParserError(Exception):
@@ -163,13 +178,19 @@ class Parser():
                         'attack': 'command', 'check': 'command',
                         'summon': 'command', 'exit': 'command',
 
-                        'my': 'determiner', 'your': 'determiner'
+                        'my': 'determiner', 'your': 'determiner', 'enemy': 'determiner',
+
+                        'mf': 'field', 'mfield': 'field', 'stf': 'field', 'stfield': 'field',
 
 
         'trap': 'type',
         'spell': 'type',
         'monster': 'type'
         }
+        
+        
+    def add_lexeme(self, word, type):
+        self.lexemes[word] = type
     def scan(self, sentence):
         words = sentence.split()
         word_list = []
@@ -179,8 +200,9 @@ class Parser():
                 num_tuple = ('number', temp)
                 word_list.append(num_tuple)
             else:
-                word_type = self.lexemes.get(word, 'Error')
+                word_type = self.lexemes.get(word, 'error')
                 word_list.append((word_type, word))
+        print word_list
         return word_list
     def peek(self, word_list):
         if word_list:
@@ -226,19 +248,72 @@ class Parser():
 
        
         parameters = self.parse_parameters(word_list, command)
-        command_object = ParsedCommand(command, parameters)
+        command_object = ParsedCommand(parameters, command=command)
         return command_object
 
-    def parse_sentence(self, word_list):
+    def parse_choice(self, players, word_list):
+        
+        #player_determiner = None
+        parameters = []
+        start = self.peek(word_list)
+        print start
+        if start == 'determiner':
+            player = []
+            player_determiner = self.match(word_list, 'determiner')
+            print player_determiner
+            
+            if player_determiner[1] == "my":
+                player = players[0]
+            elif player_determiner[1] == "enemy":
+                player = players[1]
+
+            first_parameter = self.peek(word_list)
+            print first_parameter
+
+            if first_parameter == 'field':
+                para1 = self.match(word_list, 'field')
+                
+
+
+                #print para1
+
+                parameters.append(para1)
+            if first_parameter == 'area':
+                para1 = self.match(word_list, 'area')
+
+                parameters.append(para1)
+
+            second_parameter = self.peek(word_list)
+
+            if second_parameter:
+                if second_parameter == 'number':
+                    para2 = self.match(word_list, 'number')
+                    
+                    parameters.append(para2)
+
+
+
+        choice_object = ParsedCommand(parameters, determiner=player)
+        print choice_object.determiner
+        print choice_object.command
+        print choice_object.parameter
+        return choice_object
+
+
+    def parse_sentence(self, word_list, players):
         start = self.peek(word_list)
         #print start
 
         if start == 'command':
             command = self.match(word_list, 'command')
             return self.parse_command(word_list, command)
+        elif start == 'determiner':
+            return self.parse_choice(players, word_list)
+        #else:
+            #return self.parse_choice(players, word_list)
         else:
             #raise ParserError('This is not a valid command.')
-            print "You must start with a command."
+            #print "You must start with a command."
             return
 
     def parse(self, string, players):
@@ -246,7 +321,7 @@ class Parser():
             return None
         else:
             word_list = self.scan(string)
-            returned_object = self.parse_sentence(word_list)
+            returned_object = self.parse_sentence(word_list, players)
         if returned_object:
             if len(returned_object.parameter) != 0:
                 print "1 or more parameters"
@@ -254,11 +329,15 @@ class Parser():
                 print "no parameters given"
             elif returned_object.command:
                 print "there was no parameters or a command"
-            print "Passing parsed object to input_handler..."
-            input_handler.input(players, string, parser_object=returned_object)
+            
+            if returned_object.command:
+                print "Passing parsed object to input_handler..."
+                input_handler.input(players, string, parser_object=returned_object)
+            else:
+                return returned_object
             print "All handled."
         else:
-            print "Passing input_handler a string."
+            cprint ("Failed to return a parsed object.\nPlan B: Passing the string to input_handler.", "red")
             input_handler.input(players, string)
 
         
@@ -541,7 +620,7 @@ card7 = Spell("Spell Card 3", "spell", "This is spell card 3", "print 'I am numb
 card8 = Spell("Trap Card 1", "trap", "This is trap card 1", "print 'I am number 5'")
 card9 = Spell("Trap Card 2", "trap", "This is trap card 2", "print 'I am number 7'")
 card10 = Spell("Trap Card 3", "trap", "This is trap card 3", "print 'I am number 9'")
-card11 = Spell("Mystical Space Typhoon", "spell", "Destroy 1 Spell or Trap Card on the field.", "effect")
+card11 = Spell("Mystical Space Typhoon", "spell", "Destroy 1 Spell or Trap Card on the field.", "destroy(players, 'all', both_players=True)")
 
 # Setup player variables
 player1_decklist = [card1, card2, card3, card4, card5, card6, card7, card8, card9, card10,card11]
@@ -606,6 +685,8 @@ if test_mode:
     print "Test 1:"
     test = parser.parse('summon', players)
     destroy(players, 'all', both_players=True)
+    #choice = parser.parse(raw_input("> "),players)
+
     
 else:
     while True:

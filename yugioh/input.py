@@ -36,7 +36,8 @@ class Input():
         elif parser_object:
             print "Authorising parser_object."
             print "parser_object.command = "
-            print parser_object.command[1]
+            if parser_object.command[1]:
+                print parser_object.command[1]
             print "parser_object.parameter[0][0] = "
             if parser_object.parameter:
 
