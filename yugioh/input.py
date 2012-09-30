@@ -1,5 +1,8 @@
 import os, sys
 
+class InputError(Exception):
+    pass
+
 class Input():
     def __init__(self, test_details):
         self.commands_list = ["summon", "spell", "exit", "trap", "hc", "gv", "rp", "hand", "mf", "stf", "save",
@@ -17,12 +20,12 @@ class Input():
         else:
             string = raw_input(prompt)
         return string
-    def input(self, players, string="default", parser_object=False):
+    def input(self, players, string, parser_object=False):
         if parser_object:
             print "Gave this Input() a parser_object"
             self.authorise(players, parser_object=parser_object)
         else:
-            self.authorise(players, string=string)
+            self.authorise(players, string)
 
     def authorise(self, players, string="default", parser_object=False):
         if string != "default":
@@ -35,13 +38,32 @@ class Input():
             print "parser_object.command = "
             print parser_object.command[1]
             print "parser_object.parameter[0][0] = "
-            print parser_object.parameter[0][0]
-            if parser_object.command[1] == 'set' and parser_object.parameter[0][0] == 'type':
-                players[0].set(parser_object.parameter[0][1])
+            if parser_object.parameter:
+
+                print parser_object.parameter[0][0]
+            else:
+                print "No parameters were given"
+                self.execute(parser_object.command[1], players)
+            if parser_object.parameter:
+                if parser_object.command[1] == 'set' and parser_object.parameter[0][0] == 'type':
+                    players[0].set(parser_object.parameter[0][1])
+                if parser_object.command[1] == 'activate' and parser_object.parameter[0][0] == 'type':
+                    players[0].activate(parser_object.parameter[0][1])
+            else:
+                for command in self.commands_list:
+
+                    if parser_object.command[1] == command:
+                        print "Matched command to a command in commands_list."
+                        try:
+                            self.execute(parser_object.command[1], players)
+                            break
+                        except InputError:
+                            print "INPUT ERROR BITCHES"
+
         else:
             print "Mr. Input() is confused :(" 
 
-    def execute(self, string, players):
+    def execute(self, string, players, parameters=False):
         if string == "summon":
             players[0].summon()
         elif string == "battle":
@@ -97,3 +119,5 @@ class Input():
         elif string == "test":
             print "Test command: Currently testing the Draw method"
             players[0].draw(False)
+        else:
+            return InputError

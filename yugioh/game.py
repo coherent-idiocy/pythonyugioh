@@ -18,19 +18,6 @@
 ##
 ################################################################################
 
-## TODO LIST - Global list of tasks (when I remember to update them!)
-##
-##  - Add a lexicon to deconstruct sentences and identify what wants to be done
-##      - Split up commands e.g. "spell" and then identify a card "Pot of Greed"
-##        so that game automatically figures out what you want to do.
-##          - Prompts for "Is that what you wanted to do:" so that nothing bad
-##            is executed accidently.
-##  - Implement a help command/function to help people with playing the game
-##  - Move Player class to another file
-##  - Get get_input() function working properly
-##
-################################################################################
-
 
 # Errors:
 # ImportError
@@ -43,10 +30,10 @@ from errors import *
 
 
 
-test_mode = True
+test_mode = False
 
 #test_answers = ["set","1","activate","1"]
-test_answers = ["1"]
+test_answers = ["","1"]
 test_current_element = 0
 
 
@@ -103,6 +90,65 @@ def load_image(name, colorkey=None):
 def current_players():
     return players
 
+def destroy(players, area, both_players=True):
+    if area == "all":
+        cprint("(Enter: 'my' or 'enemy' + 'mf' or 'stf' + the corresponding number)", "yellow")
+        cprint("(E.g. 'my mf 2')", "yellow")
+        cprint("Player1:", "magenta")
+        cprint ("Monster Field:", "cyan")
+        players[0].mfield.list(False, print_names=True)
+        cprint ("Spell & Trap Field:", "cyan")
+        players[0].stfield.list(False, print_names=True)
+        cprint("Player2:", "magenta")
+        cprint ("Monster Field:", "cyan")
+        players[1].mfield.list(False, print_names=True)
+        cprint ("Spell & Trap Field:", "cyan")
+        players[1].stfield.list(False, print_names=True)
+
+
+
+
+
+
+
+        #card1 = players[0].mfield.spaces[0][2].name
+        #print len(card1)
+        #if len(card1) > 7:
+        #    print "sjkbfnsef"
+        #    card1.join('hfsef')
+        #line = players[0].mfield.spaces[0][2].name
+        #n = 7
+        #card1 = [line[i:i+n] for i in range(0, len(line), n)]
+        #part1 = card1[0]
+        #part2 = card1[1]
+        #part2.split
+        #part3 = "       "
+        #if card1[2]:
+        #    part3 = card1[2]
+        #else:
+        #    part3 = "      "
+        #print card1
+        #part1 = "Monster"
+        #part2 = "Card 2 "
+        #part3 = "" + " " + " " + " " + " " + " " + " " + " "
+        #print """
+ #-------   -------   -------   -------   -------
+#|monster| |monster| |monster| |monster| |monster|
+#|zone 1 | |zone 2 | |zone 3 | |zone 4 | |zone 5 |
+#|%s| |       | |       | |       | |       |
+#|%s| |       | |       | |       | |       |
+#|%s| |       | |       | |       | |       |
+# -------   -------   -------   -------   -------
+# -------   -------   -------   -------   -------
+#|       | |       | |       | |       | |       |
+#|       | |       | |       | |       | |       |
+#|       | |       | |       | |       | |       |
+#|       | |       | |       | |       | |       |
+#|       | |       | |       | |       | |       |
+#-------   -------   -------   -------   -------
+#""" % (part1, part2, part3)
+
+
 class ParsedCommand():
     def __init__(self, command, parameter):
         self.command = command
@@ -115,7 +161,10 @@ class Parser():
     def __init__(self):
         self.lexemes = {'set': 'command', 'activate': 'command',
                         'attack': 'command', 'check': 'command',
-                        'summon': 'command',
+                        'summon': 'command', 'exit': 'command',
+
+                        'my': 'determiner', 'your': 'determiner'
+
 
         'trap': 'type',
         'spell': 'type',
@@ -160,7 +209,14 @@ class Parser():
         if command[1] == "set":
             #print self.peek(word_list)
             if self.peek(word_list) == 'type':
-                print "This command is followed by a monster type, which is:"
+                print "This command is followed by a card type, which is:"
+                card_type = self.match(word_list, 'type')
+                print card_type
+                parameters.append(card_type)
+        if command[1] == "activate":
+            #print self.peek(word_list)
+            if self.peek(word_list) == 'type':
+                print "This command is followed by a cardd type, which is:"
                 card_type = self.match(word_list, 'type')
                 print card_type
                 parameters.append(card_type)
@@ -181,12 +237,38 @@ class Parser():
             command = self.match(word_list, 'command')
             return self.parse_command(word_list, command)
         else:
-            raise ParserError('This is not a valid command.')
+            #raise ParserError('This is not a valid command.')
+            print "You must start with a command."
+            return
 
-    def parse(self, string):
-        word_list = self.scan(string)
-        output = self.parse_sentence(word_list)
-        return output
+    def parse(self, string, players):
+        if string == "":
+            return None
+        else:
+            word_list = self.scan(string)
+            returned_object = self.parse_sentence(word_list)
+        if returned_object:
+            if len(returned_object.parameter) != 0:
+                print "1 or more parameters"
+            elif len(returned_object.parameter) == 0:
+                print "no parameters given"
+            elif returned_object.command:
+                print "there was no parameters or a command"
+            print "Passing parsed object to input_handler..."
+            input_handler.input(players, string, parser_object=returned_object)
+            print "All handled."
+        else:
+            print "Passing input_handler a string."
+            input_handler.input(players, string)
+
+        
+            
+            
+    #def check(self, players, string):
+
+        
+
+
 
 class Lifepoints():
     def __init__(self):
@@ -318,10 +400,15 @@ class Player():
             
     def set(self, type):
         card_type_list = []
+
         for card in self.hand:
             if card.type == type:
                 print card.name
                 card_type_list.append(card)
+        if len(card_type_list) == 0:
+            cprint("You don't have any %s cards in your hand." % type, "red")
+            return
+
         result = input_handler.input_get("Which %s would you like to set? " % type)
         result = convert_int(result)
         if result == None:
@@ -347,6 +434,9 @@ class Player():
             if card.type == type:
                 print card.name
                 card_type_list.append(card)
+        if len(area) == 0:
+            cprint("You have no spells to activate.", "red")
+            return
         result = input_handler.input_get("Which %s would you like to activate? " % type)
         result = convert_int(result) - 1
         if result == None:
@@ -442,19 +532,19 @@ class GraphicsHandler():
                 
 # Cards:
 card1 = Monster("Monster Card 1", "monster", 4, 1000, 500)
-card2 = Monster("Monster Card 2", "monster", 5, 2000, 300)
-card3 = Monster("Monster Card 3", "monster", 6, 1500, 450)
+card2 = Monster("Monster Card 2", "monster", 4, 2000, 300)
+card3 = Monster("Monster Card 3", "monster", 4, 1500, 450)
 card4 = Monster("Monster Card 4", "monster", 4, 600, 2000)
 card5 = Spell("Spell Card 1", "spell", "This is spell card 1", "print 'I am number 1'")
 card6 = Spell("Spell Card 2", "spell", "This is spell card 2", "print 'I am number 2'")
 card7 = Spell("Spell Card 3", "spell", "This is spell card 3", "print 'I am number 3'")
 card8 = Spell("Trap Card 1", "trap", "This is trap card 1", "print 'I am number 5'")
 card9 = Spell("Trap Card 2", "trap", "This is trap card 2", "print 'I am number 7'")
-card10 = Spell("Trap Card 2", "trap", "This is trap card 3", "print 'I am number 9'")
-
+card10 = Spell("Trap Card 3", "trap", "This is trap card 3", "print 'I am number 9'")
+card11 = Spell("Mystical Space Typhoon", "spell", "Destroy 1 Spell or Trap Card on the field.", "effect")
 
 # Setup player variables
-player1_decklist = [card1, card2, card3, card4, card5, card6, card7, card8, card9, card10]
+player1_decklist = [card1, card2, card3, card4, card5, card6, card7, card8, card9, card10,card11]
 player2_decklist = [card1, card2, card3, card4, card5, card6, card7, card8, card9, card10]
 player1 = Player("Joshua", player1_decklist)
 player2 = Player("Steven", player2_decklist)
@@ -486,7 +576,9 @@ def phasecycle():       # Cycles through each phase for the active player's turn
         active_phase += 1
     while active_phase == 3:
         print "Main Phase 1"
-        input_handler.input(players, string=input_handler.input_get("What do you want to do: "))
+        #input_handler.input(players, input_handler.input_get("What do you want to do: "))
+        input_string = input_handler.input_get("What to do bru: ")
+        parser.parse(input_string,players)
         proceed_phase = input_handler.input_get("Would you like to end Main Phase 1? ")   # Ask user if they want to end the current phase
             
         if proceed_phase in ('yes', 'y', 'proceed', 'ok'):
@@ -512,9 +604,8 @@ players = [player1, player2]
 if test_mode:
     print "Test mode!"
     print "Test 1:"
-    test = parser.parse(raw_input("> "))
-    print test.command, test.parameter
-    input_handler.input(players, parser_object=test)
+    test = parser.parse('summon', players)
+    destroy(players, 'all', both_players=True)
     
 else:
     while True:
