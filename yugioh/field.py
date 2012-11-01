@@ -13,10 +13,10 @@ class Field():
     def addcard(self, card, position):
         for space in self.spaces:
             if space[0] == 0:
-                print "Found an open space"
+                #print "Found an open space"
                 space[0], space[1], space[2] = 1, position, card
-                print space
-                print space[2].name
+                #print space
+                #print space[2].name
                 break
         #print "After break"
     def removecard(self, card):
@@ -30,29 +30,45 @@ class Field():
         for space in self.spaces:
             if space[2] == card:
                 space[1] == state
-    def list(self, type, print_names=False):
+    def list(self, type, print_names=False, detailed=False):
         return_type = []
         if type == False:
             for space in self.spaces:
                 if space[0] == 1:
-                    print space[2].name
-        elif type == "spell":
+                    if detailed != False:
+
+
+
+                        print space[2].name, ",", space[2].type
+                        #print space[2].type
+
+
+                    else:
+
+                        print space[2].name
+
+        else:
             for space in self.spaces:
                 if space[0] == 1:
-                    if space[2].type == "spell":
+                    if space[2].type == type:
                         return_type.append(space[2])
-            return return_type
-        elif type == "monster":
-            for space in self.spaces:
-                if space[0] == 1:
-                    if space[2].type == "monster":
-                        return_type.append(space[2])
-            return return_type
-        elif type == "trap":
-            for space in self.spaces:
-                if space[0] == 1:
-                    if space[2].type == "trap":
-                        return_type.append(space[2])
-                        if print_names == True:
-                            print space[2].name
+        #elif type == "spell":
+        #    for space in self.spaces:
+        #        if space[0] == 1:
+        #            if space[2].type == "spell":
+        #                return_type.append(space[2])
+        #    return return_type
+        #elif type == "monster":
+        #    for space in self.spaces:
+        #        if space[0] == 1:
+        #            if space[2].type == "monster":
+        #                return_type.append(space[2])
+        #    return return_type
+        #elif type == "trap":
+        #    for space in self.spaces:
+        #       if space[0] == 1:
+        #            if space[2].type == "trap":
+        #                return_type.append(space[2])
+        #                if print_names == True:
+        #                    print space[2].name
             return return_type

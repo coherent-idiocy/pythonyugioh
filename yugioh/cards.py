@@ -1,7 +1,8 @@
 class Monster():
-    def __init__(self, name, type, level, attack, defense):
+    def __init__(self, name, type, monster_type, level, attack, defense):
         self.name = name
         self.type = type
+        self.monster_type = monster_type
         self.level = level
         self.attack = attack
         self.defense = defense
@@ -25,9 +26,13 @@ class Deck():
         self.deck = deck_list
     def deck_count(self):
         return len(self.deck)
-    def draw(self, draw_card):
+    def draw(self, draw_card=False):
         if isinstance(draw_card, int):
             #print "You gave me an integer"
             card = self.deck[draw_card]
+            self.deck.remove(card)
+            return card
+        elif draw_card != False:
+            card = draw_card
             self.deck.remove(card)
             return card

@@ -3,13 +3,31 @@ import os, sys
 class InputError(Exception):
     pass
 
+
+# Input Handler Class
 class Input():
+
+    # Methods:
+    # 1) input_get(prompt)
+    # 2) input(players, string, parser_object=False)
+    # 3) authorise(players, string="default", parser_object=False)
+    # 4) execute(string, players, parameters=False)
+
+    # How to run a command:
+    # *Assuming the instance of Input() is called input_handler
+    # 1) Take input to determine the command.
+    #   -> input_handler.input(players, input_handler.input_get("This is the command prompt: "))
+    # 2) Specific command specified in a string
+    #   -> input_handler.input(players, string)
+
+
     def __init__(self, test_details):
         self.commands_list = ["summon", "spell", "exit", "trap", "hc", "gv", "rp", "hand", "mf", "stf", "save",
-                               "help", "battle", "report", "settings", "test"]
+                               "help", "battle", "report", "settings", "test", "mf -d"]
         self.test_mode = test_details[0]
         self.test_answers = test_details[1]
         self.test_current_element = 0
+
     def input_get(self,prompt):
         if self.test_mode == True:
             print prompt,
@@ -20,6 +38,7 @@ class Input():
         else:
             string = raw_input(prompt)
         return string
+
     def input(self, players, string, parser_object=False):
         if parser_object:
             print "Gave this Input() a parser_object"
@@ -31,8 +50,11 @@ class Input():
         if string != "default":
             for command in self.commands_list:
                 if string == command:
+                    #print "Test 1"
                     self.execute(command, players)
                     break
+
+        # Ignoring this for now....
         elif parser_object:
             print "Authorising parser_object."
             print "parser_object.command = "
@@ -65,6 +87,7 @@ class Input():
             print "Mr. Input() is confused :(" 
 
     def execute(self, string, players, parameters=False):
+        #print string
         if string == "summon":
             players[0].summon()
         elif string == "battle":
@@ -94,10 +117,11 @@ class Input():
             print "Removed from Play command in development."
         elif string == "hand":
             print "Your hand:"
-            for card in players[0].hand:
-                print card.name,
-                print ",",
-            print ""
+            #for card in players[0].hand:
+            #    print card.name,
+            #    print ",",
+            #print ""
+            players[0].hand.listnames()
         elif string == "lp":
             print player1.lifepoints
             print player[0].lifepoints.lifepoints
@@ -105,6 +129,11 @@ class Input():
             #print "Monsterfield command in development."
             print "Monster Field:"
             players[0].mfield.list(False)
+        elif string == "mf -d":
+
+            print "Monster Field2:"
+            players[0].mfield.list(False, detailed=True)
+
         elif string == "stf":
             #print "Spelltrapfield command in development."
             print "Spell and Trap Field:"
@@ -120,5 +149,8 @@ class Input():
         elif string == "test":
             print "Test command: Currently testing the Draw method"
             players[0].draw(False)
+        elif string == "eval":
+            input_get = raw_input("")
+            exec input_get
         else:
             return InputError
